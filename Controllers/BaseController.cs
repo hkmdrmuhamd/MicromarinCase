@@ -29,11 +29,11 @@ namespace MicromarinCase.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateDynamicObject(CreateDto createOrderDto)
+        public async Task<IActionResult> CreateDynamicObject(CreateDto createDto)
         {
             try
             {
-                await _dynamicObjectService.CreateDynamicObjectAsync(createOrderDto);
+                await _dynamicObjectService.CreateDynamicObjectAsync(createDto);
                 return Ok("Dynamic object successfully added");
             }
             catch (Exception ex)
@@ -43,11 +43,11 @@ namespace MicromarinCase.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateDynamicObject(UpdateDto updateOrderDto)
+        public async Task<IActionResult> UpdateDynamicObject(UpdateDto updateDto)
         {
             try
             {
-                await _dynamicObjectService.UpdateDynamicObjectAsync(updateOrderDto);
+                await _dynamicObjectService.UpdateDynamicObjectAsync(updateDto);
                 return Ok("Dynamic object successfully updated");
             }
             catch (Exception ex)
