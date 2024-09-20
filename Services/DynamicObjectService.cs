@@ -15,51 +15,6 @@ namespace MicromarinCase.Services
             _context = context;
         }
 
-        public async Task CreateDynamicObjectAsync(CreateDto createDto)
-        {
-            var processedJsonData = ProcessJsonElement(createDto.DynamicObject, createDto.DynamicSubObject);
-            ValidateJson(processedJsonData);
-            await _context.Datas.AddAsync(new Data
-            {
-                JsonData = JsonConvert.SerializeObject(processedJsonData)
-            });
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task DeleteOrderAsync(int Id)
-        {
-            var data = await _context.Datas.FindAsync(Id);
-            if (data == null)
-            {
-                throw new Exception("Data not found");
-            }
-            _context.Datas.Remove(data);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<List<ResultDto>> GettAllDynamicObjectAsync()
-        {
-            var datas = await _context.Datas.ToListAsync();
-            return datas.Select(p => new ResultDto
-            {
-                Id = p.Id,
-                JsonData = p.JsonData
-            }).ToList();
-        }
-
-        public async Task UpdateDynamicObjectAsync(UpdateDto updateDto)
-        {
-            var data = await _context.Datas.FindAsync(updateDto.Id);
-            if (data == null)
-            {
-                throw new Exception("Data not found");
-            }
-            var processedJsonData = ProcessJsonElement(updateDto.DynamicObject, updateDto.DynamicSubObject);
-            ValidateJson(processedJsonData);
-            data.JsonData = JsonConvert.SerializeObject(processedJsonData);
-            await _context.SaveChangesAsync();
-        }
-
         private object ProcessJsonElement(Dictionary<string, object> dynamicObject, List<Dictionary<string, object>> dynamicSubObject)
         {
             var result = new Dictionary<string, object>();
@@ -130,7 +85,6 @@ namespace MicromarinCase.Services
                         return jsonElement.ToString();
                 }
             }
-            // Eğer element zaten Dictionary<string, object> ise:
             if (element is Dictionary<string, object> dictionaryElement)
             {
                 var processedDictionary = new Dictionary<string, object>();
@@ -140,7 +94,6 @@ namespace MicromarinCase.Services
                 }
                 return processedDictionary;
             }
-            // Eğer element List<Dictionary<string, object>> tipinde ise:
             if (element is List<Dictionary<string, object>> listElement)
             {
                 var processedList = new List<object>();
@@ -205,6 +158,51 @@ namespace MicromarinCase.Services
                     }
                 }
             }
+        }
+
+        public async Task CreateDynamicObjectAsync(CreateDto createDto)
+        {
+            var processedJsonData = ProcessJsonElement(createDto.DynamicObject, createDto.DynamicSubObject);
+            ValidateJson(processedJsonData);
+            await _context.Datas.AddAsync(new Data
+            {
+                JsonData = JsonConvert.SerializeObject(processedJsonData)
+            });
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteOrderAsync(int Id)
+        {
+            var data = await _context.Datas.FindAsync(Id);
+            if (data == null)
+            {
+                throw new Exception("Data not found");
+            }
+            _context.Datas.Remove(data);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<List<ResultDto>> GettAllDynamicObjectAsync()
+        {
+            var datas = await _context.Datas.ToListAsync();
+            return datas.Select(p => new ResultDto
+            {
+                Id = p.Id,
+                JsonData = p.JsonData
+            }).ToList();
+        }
+
+        public async Task UpdateDynamicObjectAsync(UpdateDto updateDto)
+        {
+            var data = await _context.Datas.FindAsync(updateDto.Id);
+            if (data == null)
+            {
+                throw new Exception("Data not found");
+            }
+            var processedJsonData = ProcessJsonElement(updateDto.DynamicObject, updateDto.DynamicSubObject);
+            ValidateJson(processedJsonData);
+            data.JsonData = JsonConvert.SerializeObject(processedJsonData);
+            await _context.SaveChangesAsync();
         }
     }
 }
