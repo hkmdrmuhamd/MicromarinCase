@@ -1,13 +1,13 @@
 ﻿using Newtonsoft.Json;
 
-namespace MicromarinCase.Entities.Order
+namespace MicromarinCase.Entities
 {
-    public class OrderEntity : BaseEntity
+    public class DynamicSubObjectEntities : BaseEntity
     {
-        public OrderEntity()
+        public DynamicSubObjectEntities()
         {
         }
-        public OrderEntity(Dictionary<string, object> dynamicFields)
+        public DynamicSubObjectEntities(Dictionary<string, object> dynamicFields)
         {
             foreach (var field in dynamicFields)
             {

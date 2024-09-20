@@ -1,8 +1,6 @@
 ﻿using MicromarinCase.Context;
 using MicromarinCase.Dtos;
 using MicromarinCase.Entities;
-using MicromarinCase.Entities.Order;
-using MicromarinCase.Entities.Product;
 using Newtonsoft.Json;
 using System.Text.Json;
 
@@ -16,19 +14,19 @@ namespace MicromarinCase.Services
             _context = context;
         }
 
-        public async Task CreateOrderAsync(CreateOrderDto createDynamicObjectDto)
+        public async Task CreateOrderAsync(CreateDto createDynamicObjectDto)
         {
-            var order = new OrderEntity(createDynamicObjectDto.OrderData);
-            var products = new List<ProductEntity>();
+            var dynamicObject = new DynamicObjectEntities(createDynamicObjectDto.DynamicObject);
+            var dynamicSubObjects = new List<DynamicSubObjectEntities>();
 
-            foreach (var productData in createDynamicObjectDto.Products)
+            foreach (var dynamicSubObjectsData in createDynamicObjectDto.DynamicSubObject)
             {
-                var product = new ProductEntity(productData);
-                products.Add(product);
+                var dynamicSubObject = new DynamicSubObjectEntities(dynamicSubObjectsData);
+                dynamicSubObjects.Add(dynamicSubObject);
             }
             var jsonData = new Dictionary<string, object>
             {
-                { "OrderData", order.DynamicFields.ToDictionary(
+                { "DynamicObject", dynamicObject.DynamicFields.ToDictionary(
                     field => field.Key,
                     field => field.Value is JsonElement jsonElement ?
                         jsonElement.ValueKind switch
@@ -42,7 +40,7 @@ namespace MicromarinCase.Services
                         }
                     : field.Value
                 )},
-                { "Products", products.Select(p => new
+                { "DynamicSubObject", dynamicSubObjects.Select(p => new
                     {
                         p.Id,
                         DynamicFields = p.DynamicFields.ToDictionary(

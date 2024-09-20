@@ -15,7 +15,7 @@ namespace MicromarinCase.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateDynamicObject(CreateOrderDto createOrderDto)
+        public async Task<IActionResult> CreateDynamicObject(CreateDto createOrderDto)
         {
             try
             {
