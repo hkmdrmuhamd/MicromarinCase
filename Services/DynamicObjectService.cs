@@ -15,56 +15,13 @@ namespace MicromarinCase.Services
             _context = context;
         }
 
-        public async Task CreateDynamicObjectAsync(CreateDto createDynamicObjectDto)
+        public async Task CreateDynamicObjectAsync(CreateDto createDto)
         {
-            var dynamicObject = new DynamicObjectEntities(createDynamicObjectDto.DynamicObject);
-            var dynamicSubObjects = new List<DynamicSubObjectEntities>();
-
-            foreach (var dynamicSubObjectsData in createDynamicObjectDto.DynamicSubObject)
-            {
-                var dynamicSubObject = new DynamicSubObjectEntities(dynamicSubObjectsData);
-                dynamicSubObjects.Add(dynamicSubObject);
-            }
-            var jsonData = new Dictionary<string, object>
-            {
-                { "DynamicObject", dynamicObject.DynamicFields.ToDictionary(
-                    field => field.Key,
-                    field => field.Value is JsonElement jsonElement ?
-                        jsonElement.ValueKind switch
-                        {
-                            JsonValueKind.String => jsonElement.GetString(),
-                            JsonValueKind.Number => jsonElement.TryGetInt32(out var intValue) ? (object)intValue : jsonElement.GetDecimal(),
-                            JsonValueKind.True => true,
-                            JsonValueKind.False => false,
-                            JsonValueKind.Null => null,
-                            _ => jsonElement.ToString()
-                        }
-                    : field.Value
-                )},
-                { "DynamicSubObject", dynamicSubObjects.Select(p => new
-                    {
-                        p.Id,
-                        DynamicFields = p.DynamicFields.ToDictionary(
-                            field => field.Key,
-                            field => field.Value is JsonElement jsonElement ?
-                                jsonElement.ValueKind switch
-                                {
-                                    JsonValueKind.String => jsonElement.GetString(),
-                                    JsonValueKind.Number => jsonElement.TryGetInt32(out var intValue) ? (object)intValue : jsonElement.GetDecimal(),
-                                    JsonValueKind.True => true,
-                                    JsonValueKind.False => false,
-                                    JsonValueKind.Null => null,
-                                    _ => jsonElement.ToString()
-                                }
-                            : field.Value
-                        )
-                    }).ToList()
-                }
-            };
-
+            var processedJsonData = ProcessJsonElement(createDto.DynamicObject, createDto.DynamicSubObject);
+            ValidateJson(processedJsonData);
             await _context.Datas.AddAsync(new Data
             {
-                JsonData = JsonConvert.SerializeObject(jsonData)
+                JsonData = JsonConvert.SerializeObject(processedJsonData)
             });
             await _context.SaveChangesAsync();
         }
@@ -90,60 +47,164 @@ namespace MicromarinCase.Services
             }).ToList();
         }
 
-        public async Task UpdateDynamicObjectAsync(UpdateDto updateDynamicObjectDto)
+        public async Task UpdateDynamicObjectAsync(UpdateDto updateDto)
         {
-            var data = await _context.Datas.FindAsync(updateDynamicObjectDto.Id);
+            var data = await _context.Datas.FindAsync(updateDto.Id);
             if (data == null)
             {
                 throw new Exception("Data not found");
             }
-
-            var dynamicObject = new DynamicObjectEntities(updateDynamicObjectDto.DynamicObject);
-            var dynamicSubObjects = new List<DynamicSubObjectEntities>();
-
-            foreach (var dynamicSubObjectsData in updateDynamicObjectDto.DynamicSubObject)
-            {
-                var dynamicSubObject = new DynamicSubObjectEntities(dynamicSubObjectsData);
-                dynamicSubObjects.Add(dynamicSubObject);
-            }
-            var jsonData = new Dictionary<string, object>
-            {
-                { "DynamicObject", dynamicObject.DynamicFields.ToDictionary(
-                    field => field.Key,
-                    field => field.Value is JsonElement jsonElement ?
-                        jsonElement.ValueKind switch
-                        {
-                            JsonValueKind.String => jsonElement.GetString(),
-                            JsonValueKind.Number => jsonElement.TryGetInt32(out var intValue) ? (object)intValue : jsonElement.GetDecimal(),
-                            JsonValueKind.True => true,
-                            JsonValueKind.False => false,
-                            JsonValueKind.Null => null,
-                            _ => jsonElement.ToString()
-                        }
-                    : field.Value
-                    )},
-                { "DynamicSubObject", dynamicSubObjects.Select(p => new
-                    {
-                        p.Id,
-                        DynamicFields = p.DynamicFields.ToDictionary(
-                            field => field.Key,
-                            field => field.Value is JsonElement jsonElement ?
-                                jsonElement.ValueKind switch
-                                {
-                                    JsonValueKind.String => jsonElement.GetString(),
-                                    JsonValueKind.Number => jsonElement.TryGetInt32(out var intValue) ? (object)intValue : jsonElement.GetDecimal(),
-                                    JsonValueKind.True => true,
-                                    JsonValueKind.False => false,
-                                    JsonValueKind.Null => null,
-                                    _ => jsonElement.ToString()
-                                }
-                            : field.Value
-                        )
-                    }).ToList()
-                }
-            };
-            data.JsonData = JsonConvert.SerializeObject(jsonData);
+            var processedJsonData = ProcessJsonElement(updateDto.DynamicObject, updateDto.DynamicSubObject);
+            ValidateJson(processedJsonData);
+            data.JsonData = JsonConvert.SerializeObject(processedJsonData);
             await _context.SaveChangesAsync();
+        }
+
+        private object ProcessJsonElement(Dictionary<string, object> dynamicObject, List<Dictionary<string, object>> dynamicSubObject)
+        {
+            var result = new Dictionary<string, object>();
+            if (dynamicObject != null)
+            {
+                foreach (var property in dynamicObject)
+                {
+                    result[property.Key] = ProcessJsonElement(property.Value);
+                }
+            }
+
+            if (dynamicSubObject != null)
+            {
+                foreach (var item in dynamicSubObject)
+                {
+                    var processedItem = ProcessJsonElement(item) as Dictionary<string, object>;
+                    if (processedItem != null)
+                    {
+                        foreach (var keyValuePair in processedItem)
+                        {
+                            result[keyValuePair.Key] = keyValuePair.Value;
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private object ProcessJsonElement(object element)
+        {
+            if (element is JsonElement jsonElement)
+            {
+                switch (jsonElement.ValueKind)
+                {
+                    case JsonValueKind.Object:
+                        var dictionary = new Dictionary<string, object>();
+                        foreach (var property in jsonElement.EnumerateObject())
+                        {
+                            dictionary[property.Name] = ProcessJsonElement(property.Value);
+                        }
+                        return dictionary;
+
+                    case JsonValueKind.Array:
+                        var list = new List<object>();
+                        foreach (var item in jsonElement.EnumerateArray())
+                        {
+                            list.Add(ProcessJsonElement(item));
+                        }
+                        return list;
+
+                    case JsonValueKind.String:
+                        return jsonElement.GetString();
+
+                    case JsonValueKind.Number:
+                        return jsonElement.TryGetInt64(out var l) ? l : (object)jsonElement.GetDecimal();
+
+                    case JsonValueKind.True:
+                        return true;
+
+                    case JsonValueKind.False:
+                        return false;
+
+                    case JsonValueKind.Null:
+                        return null;
+
+                    default:
+                        return jsonElement.ToString();
+                }
+            }
+            // Eğer element zaten Dictionary<string, object> ise:
+            if (element is Dictionary<string, object> dictionaryElement)
+            {
+                var processedDictionary = new Dictionary<string, object>();
+                foreach (var kvp in dictionaryElement)
+                {
+                    processedDictionary[kvp.Key] = ProcessJsonElement(kvp.Value);
+                }
+                return processedDictionary;
+            }
+            // Eğer element List<Dictionary<string, object>> tipinde ise:
+            if (element is List<Dictionary<string, object>> listElement)
+            {
+                var processedList = new List<object>();
+                foreach (var item in listElement)
+                {
+                    processedList.Add(ProcessJsonElement(item));
+                }
+                return processedList;
+            }
+
+            return element;
+        }
+
+        private void ValidateJson(object jsonData)
+        {
+            if (jsonData is not IDictionary<string, object> jsonDictionary)
+            {
+                throw new ArgumentException("Invalid JSON data format.");
+            }
+
+            if (jsonDictionary.ContainsKey("Customer"))
+            {
+                var customerData = jsonDictionary["Customer"] as IDictionary<string, object>;
+                if (customerData == null)
+                {
+                    throw new ArgumentException("The Customer field is not in a valid JSON format.");
+                }
+
+                var requiredFields = new List<string> { "CustomerId", "Name", "Password" };
+                foreach (var field in requiredFields)
+                {
+                    if (!customerData.ContainsKey(field))
+                    {
+                        throw new ArgumentException($"Customer field is missing: ‘{field}’ is required.");
+                    }
+                }
+            }
+
+            if (jsonDictionary.ContainsKey("Product"))
+            {
+                var productData = jsonDictionary["Product"] as List<object>;
+                if (productData == null)
+                {
+                    throw new ArgumentException("The Product field is not in a valid JSON format.");
+                }
+
+                foreach (var product in productData)
+                {
+                    var productFields = product as IDictionary<string, object>;
+                    if (productFields == null)
+                    {
+                        throw new ArgumentException("The elements in Product are not in a valid JSON format.");
+                    }
+
+                    var requiredFields = new List<string> { "Name", "Price" };
+                    foreach (var field in requiredFields)
+                    {
+                        if (!productFields.ContainsKey(field))
+                        {
+                            throw new ArgumentException($"Product field missing: ‘{field}’ is required.");
+                        }
+                    }
+                }
+            }
         }
     }
 }
