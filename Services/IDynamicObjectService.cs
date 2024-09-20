@@ -4,6 +4,9 @@ namespace MicromarinCase.Services
 {
     public interface IDynamicObjectService
     {
-        Task CreateOrderAsync(CreateDto createDynamicObjectDto);
+        Task<List<ResultDto>> GettAllDynamicObjectAsync();
+        Task CreateDynamicObjectAsync(CreateDto createDynamicObjectDto);
+        Task UpdateDynamicObjectAsync(UpdateDto updateDynamicObjectDto);
+        Task DeleteOrderAsync(int Id);
     }
 }
