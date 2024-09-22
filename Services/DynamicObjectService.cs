@@ -146,7 +146,7 @@ namespace MicromarinCase.Services
                     if (jsonDictionary.ContainsKey("DynamicSubObject"))
                     {
                         var dynamicSubObject = jsonDictionary["DynamicSubObject"] as List<object>;
-                        if (dynamicSubObject == null)
+                        if (dynamicSubObject.Count == 0)
                         {
                             throw new ArgumentException("The DynamicSubObject field is not in a valid JSON format.");
                         }
@@ -223,7 +223,7 @@ namespace MicromarinCase.Services
                     if (jsonDictionary.ContainsKey("DynamicSubObject"))
                     {
                         var dynamicSubObject = jsonDictionary["DynamicSubObject"] as List<object>;
-                        if (dynamicSubObject == null)
+                        if (dynamicSubObject.Count == 0)
                         {
                             throw new ArgumentException("The DynamicSubObject field is not in a valid JSON format.");
                         }
