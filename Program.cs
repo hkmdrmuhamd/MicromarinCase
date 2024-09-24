@@ -1,12 +1,14 @@
 using MicromarinCase.Context;
+using MicromarinCase.JsonProcessing;
 using MicromarinCase.Services;
-using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddScoped<DatabaseContext>();
 builder.Services.AddScoped<IDynamicObjectService, DynamicObjectService>();
+builder.Services.AddScoped<JsonProcessor>();
+builder.Services.AddScoped<JsonValidator>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
